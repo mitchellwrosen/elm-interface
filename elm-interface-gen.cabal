@@ -37,7 +37,6 @@ common component
     ImplicitParams
     LambdaCase
     NamedFieldPuns
-    NoImplicitPrelude
     RankNTypes
     RoleAnnotations
     ScopedTypeVariables
