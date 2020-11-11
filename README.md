@@ -1,1 +1,1 @@
-# elm-interface-gen
+# elm-interface
