@@ -1,18 +1,17 @@
 module Type
   ( Type (..),
-    Constructor (..),
-    Deriving (..),
-    datatype,
+    adt,
     record,
-    typeToHaskell,
+    renderTypeAsHaskell,
   )
 where
 
 import Commentable
+import Constructor
 import Data.Foldable (toList)
-import Data.List (intercalate, sort)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
+import Deriving
 import Render
 
 data Type = Type
@@ -23,21 +22,47 @@ data Type = Type
   }
 
 instance Commentable Type where
-  comment s ty = ty {typeComment = s}
+  comment :: String -> Type -> Type
+  comment s x =
+    x {typeComment = s}
 
-data Constructor
-  = Constructor String [String]
-  | Record String (NonEmpty (String, String))
+adt :: String -> [(String, [String])] -> [Deriving] -> Type
+adt typeName constructors typeDeriving =
+  case NonEmpty.nonEmpty constructors of
+    Nothing -> error "no constructors"
+    Just typeConstructors ->
+      Type
+        { typeComment = "",
+          typeConstructors = f <$> typeConstructors,
+          typeDeriving,
+          typeName
+        }
+      where
+        f :: (String, [String]) -> Constructor
+        f (constructorName, constructorFields) =
+          Constructor
+            { constructorComment = "",
+              constructorName,
+              constructorFields = Left constructorFields
+            }
 
-data Deriving
-  = Anyclass [String]
-  | Newtype [String]
-  | Stock [String]
-  | Via [String] String
-
-typeToHaskell :: Type -> String
-typeToHaskell =
-  runRender . renderTypeAsHaskell
+record :: String -> [(String, String)] -> [Deriving] -> Type
+record typeName fields0 typeDeriving =
+  case fields0 of
+    [] -> error "bad record"
+    field : fields ->
+      Type
+        { typeComment = "",
+          typeConstructors =
+            Constructor
+              { constructorComment = "",
+                constructorName = typeName,
+                constructorFields = Right (field :| fields)
+              }
+              :| [],
+          typeDeriving,
+          typeName
+        }
 
 renderTypeAsHaskell :: Type -> Render ()
 renderTypeAsHaskell Type {typeConstructors, typeDeriving, typeName} = do
@@ -47,42 +72,3 @@ renderTypeAsHaskell Type {typeConstructors, typeDeriving, typeName} = do
     map renderConstructorAsHaskell (toList typeConstructors) `sepBy` "\n| "
     render "\n"
     map renderDerivingAsHaskell typeDeriving `sepBy` "\n"
-
-renderDerivingAsHaskell :: Deriving -> Render ()
-renderDerivingAsHaskell =
-  render . \case
-    Anyclass types -> "deriving anyclass (" ++ intercalate ", " (sort types) ++ ")"
-    Newtype types -> "deriving newtype (" ++ intercalate ", " (sort types) ++ ")"
-    Stock types -> "deriving stock (" ++ intercalate ", " (sort types) ++ ")"
-    Via types type_ -> "deriving (" ++ intercalate ", " (sort types) ++ ") via (" ++ type_ ++ ")"
-
-renderConstructorAsHaskell :: Constructor -> Render ()
-renderConstructorAsHaskell = \case
-  Constructor name fields -> render (intercalate " " (name : fields))
-  Record name fields -> do
-    render (name ++ " {")
-    indent 2 do
-      render "\n"
-      map fieldToHaskell (toList fields) `sepBy` ",\n"
-    render "\n}"
-    where
-      fieldToHaskell :: (String, String) -> Render ()
-      fieldToHaskell (k, v) =
-        render (k ++ " :: " ++ v)
-
-datatype :: String -> [Constructor] -> [Deriving] -> Type
-datatype typeName constructors typeDeriving =
-  case NonEmpty.nonEmpty constructors of
-    Nothing -> error "no constructors"
-    Just typeConstructors ->
-      Type
-        { typeComment = "",
-          typeConstructors,
-          typeDeriving,
-          typeName
-        }
-
-record :: String -> [(String, String)] -> Constructor
-record name = \case
-  [] -> error "bad record"
-  field : fields -> Record name (field :| fields)
