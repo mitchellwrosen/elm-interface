@@ -63,4 +63,6 @@ library
     Lib
   hs-source-dirs: src
   other-modules:
+    Commentable
     Render
+    Type

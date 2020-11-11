@@ -2,11 +2,13 @@ module Render
   ( Render,
     render,
     indent,
+    sepBy,
     runRender,
   )
 where
 
 import Data.Function
+import Data.List (intersperse)
 
 newtype Render a
   = Render (Int -> Dlist Char -> (Dlist Char, a))
@@ -57,6 +59,10 @@ render s =
 indent :: Int -> Render a -> Render a
 indent n (Render f) =
   Render \m -> f (m + n)
+
+sepBy :: [Render ()] -> String -> Render ()
+sepBy xs s =
+  sequence_ (intersperse (render s) xs)
 
 -- Difference list
 
