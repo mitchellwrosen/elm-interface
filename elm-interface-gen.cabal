@@ -62,3 +62,5 @@ library
   exposed-modules:
     Lib
   hs-source-dirs: src
+  other-modules:
+    Render
