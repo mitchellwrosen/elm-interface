@@ -4,32 +4,23 @@ module Constructor
   )
 where
 
-import Commentable
 import Data.Foldable (toList)
 import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import Render
-import Control.Monad (when)
+import S
 
 data Constructor = Constructor
-  { constructorComment :: String,
-    constructorName :: String,
+  { constructorName :: S,
     constructorFields :: Either [String] (NonEmpty (String, String))
   }
 
-instance Commentable Constructor where
-  comment :: String -> Constructor -> Constructor
-  comment s x =
-    x {constructorComment = s}
-
 renderConstructorAsHaskell :: Constructor -> Render ()
 renderConstructorAsHaskell = \case
-  Constructor comm name (Left fields) -> do
-    when (comm /= "") do
-      render "-- | "
-      map render (lines comm) `sepBy` "\n-- "
+  Constructor (S comm name) (Left fields) -> do
+    renderCommentAsHaskell comm
     render (intercalate " " (name : fields))
-  Constructor comm name (Right fields) -> do
+  Constructor (S _comm name) (Right fields) -> do
     render (name ++ " {")
     indent 2 do
       render "\n"

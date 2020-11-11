@@ -6,69 +6,63 @@ module Type
   )
 where
 
-import Commentable
 import Constructor
 import Data.Foldable (toList)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NonEmpty
 import Deriving
 import Render
+import S
 
 data Type = Type
-  { typeComment :: String,
-    typeConstructors :: NonEmpty Constructor,
+  { typeConstructors :: NonEmpty Constructor,
     typeDeriving :: [Deriving],
-    typeName :: String
+    typeName :: S,
+    typeVars :: [String]
   }
 
-instance Commentable Type where
-  comment :: String -> Type -> Type
-  comment s x =
-    x {typeComment = s}
-
-adt :: String -> [(String, [String])] -> [Deriving] -> Type
-adt typeName constructors typeDeriving =
+adt :: S -> [String] -> [(S, [String])] -> [Deriving] -> Type
+adt typeName typeVars constructors typeDeriving =
   case NonEmpty.nonEmpty constructors of
     Nothing -> error "no constructors"
     Just typeConstructors ->
       Type
-        { typeComment = "",
-          typeConstructors = f <$> typeConstructors,
+        { typeConstructors = f <$> typeConstructors,
           typeDeriving,
-          typeName
+          typeName,
+          typeVars
         }
       where
-        f :: (String, [String]) -> Constructor
+        f :: (S, [String]) -> Constructor
         f (constructorName, constructorFields) =
           Constructor
-            { constructorComment = "",
-              constructorName,
+            { constructorName = constructorName,
               constructorFields = Left constructorFields
             }
 
-record :: String -> [(String, String)] -> [Deriving] -> Type
-record typeName fields0 typeDeriving =
+record :: S -> [String] -> [(String, String)] -> [Deriving] -> Type
+record typeName typeVars fields0 typeDeriving =
   case fields0 of
     [] -> error "bad record"
     field : fields ->
       Type
-        { typeComment = "",
-          typeConstructors =
+        { typeConstructors =
             Constructor
-              { constructorComment = "",
-                constructorName = typeName,
+              { constructorName = typeName,
                 constructorFields = Right (field :| fields)
               }
               :| [],
           typeDeriving,
-          typeName
+          typeName,
+          typeVars
         }
 
 renderTypeAsHaskell :: Type -> Render ()
-renderTypeAsHaskell Type {typeConstructors, typeDeriving, typeName} = do
+renderTypeAsHaskell Type {typeConstructors, typeDeriving, typeName = S typeNameComment typeName} = do
+  renderCommentAsHaskell typeNameComment
   render ("data " ++ typeName ++ " =")
   indent 2 do
     render "\n"
-    map renderConstructorAsHaskell (toList typeConstructors) `sepBy` "\n| "
+    map renderConstructorAsHaskell (toList typeConstructors) `sepBy` " |\n"
     render "\n"
     map renderDerivingAsHaskell typeDeriving `sepBy` "\n"

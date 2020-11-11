@@ -3,34 +3,45 @@ module Lib
   )
 where
 
-import Commentable
-import Constructor
+import Data.Function
 import Deriving
 import Render
+import S
 import Type
 
 example :: IO ()
 example = do
   putType $
-    comment "the maybe type" $
-      adt
-        "Maybe a"
-        [ ("Nothing", []),
-          ("Just", ["a"])
-        ]
-        [ Stock ["Eq", "Generic", "Show"],
-          Anyclass ["Hashable"]
-        ]
+    adt
+      "Maybe"
+      ["a"]
+      [ ("Nothing" & comment "no data here", []),
+        ("Just" & comment "one 'a' in here", ["a"])
+      ]
+      [ Stock ["Eq", "Generic", "Show"],
+        Anyclass ["Hashable"]
+      ]
+
+  putStrLn ""
 
   putType $
-    comment "A non-empty text type" $
-      adt
-        "Text1"
-        [("Text1", ["Text"])]
-        [ Stock ["Eq", "Generic", "Ord", "Show"],
-          Newtype ["Hashable", "FromField", "ToField", "ToString", "ToText"],
-          Anyclass ["SOP.HasDatatypeInfo", "SOP.Generic", "ToJSON"]
-        ]
+    adt
+      ("Text1" & comment "A non-empty text type")
+      []
+      [("Text1", ["Text"])]
+      [ Stock ["Eq", "Generic", "Ord", "Show"],
+        Newtype ["Hashable", "FromField", "ToField", "ToString", "ToText"],
+        Anyclass ["SOP.HasDatatypeInfo", "SOP.Generic", "ToJSON"]
+      ]
+
+  putStrLn ""
+
+  putType $
+    record
+      ("User" & comment "the user type")
+      []
+      [("name", "String"), ("age", "Int")]
+      [Stock ["Show", "Generic"]]
 
 putType :: Type -> IO ()
 putType =

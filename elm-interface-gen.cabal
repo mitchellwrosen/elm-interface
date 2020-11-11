@@ -38,6 +38,7 @@ common component
     InstanceSigs
     LambdaCase
     NamedFieldPuns
+    OverloadedStrings
     RankNTypes
     RoleAnnotations
     ScopedTypeVariables
@@ -64,7 +65,7 @@ library
     Lib
   hs-source-dirs: src
   other-modules:
-    Commentable
     Constructor
     Render
+    S
     Type
